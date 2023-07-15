@@ -33,6 +33,9 @@ var adminSchema = new mongoose.Schema(
     },
        
    
+    },
+    {
+        timestamps:true,
     }
 );
 adminSchema.pre("save", async function (next) {

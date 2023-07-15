@@ -58,31 +58,37 @@ const loginSuperAdmin = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
   // check if admin exists or not
   const findAdmin = await Admin.findOne({ email });
-  if (findAdmin.role !== "SuperAdmin") throw new Error("Not Authorised");
-  if (findAdmin && (await findAdmin.isPasswordMatched(password))) {
-    const refreshToken = await generateRefreshToken(findAdmin?._id);
-    const updateadmin = await Admin.findByIdAndUpdate(
-      findAdmin.id,
-      {
-        refreshToken: refreshToken,
-      },
-      { new: true }
-    );
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      maxAge: 72 * 60 * 60 * 1000,
-    });
-    res.json({
-      _id: findAdmin?._id,
-      firstname: findAdmin?.firstname,
-      lastname: findAdmin?.lastname,
-      email: findAdmin?.email,
-      mobile: findAdmin?.mobile,
-      token: generateToken(findAdmin?._id),
-    });
-  } else {
+
+  if (!findAdmin || !findAdmin.isPasswordMatched(password)) {
     throw new Error("Invalid Credentials");
   }
+
+  if (findAdmin.role !== "SuperAdmin") {
+    throw new Error("Not Authorized");
+  }
+
+  const refreshToken = await generateRefreshToken(findAdmin._id);
+  const updatedAdmin = await Admin.findByIdAndUpdate(
+    findAdmin._id,
+    {
+      refreshToken: refreshToken,
+    },
+    { new: true }
+  );
+
+  res.cookie("refreshToken", refreshToken, {
+    httpOnly: true,
+    maxAge: 72 * 60 * 60 * 1000,
+  });
+
+  res.json({
+    _id: findAdmin._id,
+    firstname: findAdmin.firstname,
+    lastname: findAdmin.lastname,
+    email: findAdmin.email,
+    mobile: findAdmin.mobile,
+    token: generateToken(findAdmin._id),
+  });
 });
 // handle refresh token
 
@@ -102,12 +108,12 @@ const handleRefreshToken = asyncHandler(async (req, res) => {
 });
 //updateAdmin  
 const updatedAdmin = asyncHandler(async (req, res) => {
-  const { id } = req.params;
+  const { _id } = req.admin;
    
 
   try {
     const updatedAdmin = await Admin.findByIdAndUpdate(
-      id,
+      _id,
       {
         firstname: req?.body?.firstname,
         lastname: req?.body?.lastname,
